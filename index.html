@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IronLog — Gym Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080b0f;--surface:#0f1318;--surface2:#161c24;--surface3:#1e2730;
+  --border:#252e3a;--border2:#2e3a48;--red:#ff3d3d;--orange:#ff7c2a;
+  --yellow:#ffc233;--green:#2ecc71;--blue:#3d9eff;--text:#e8edf2;
+  --text2:#9aaab8;--text3:#5a6a7a;
+  --fd:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;--fm:'Space Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 40% at 10% 0%,rgba(255,61,61,.06) 0%,transparent 70%),radial-gradient(ellipse 50% 60% at 90% 100%,rgba(61,158,255,.04) 0%,transparent 70%);}
+.wrap{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px 90px;}
+
+/* HEADER */
+.header{padding:28px 0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.logo{font-family:var(--fd);font-size:38px;font-weight:900;letter-spacing:3px;line-height:1;}
+.logo .iron{color:var(--text);}.logo .log{color:var(--red);}
+.header-sub{font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:3px;letter-spacing:1px;}
+.phase-pill{font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:2px;padding:6px 14px;border-radius:4px;border:1px solid;cursor:pointer;transition:all .2s;}
+.phase-pill.f1{color:var(--yellow);border-color:rgba(255,194,51,.3);background:rgba(255,194,51,.07);}
+.phase-pill.f2{color:var(--orange);border-color:rgba(255,124,42,.3);background:rgba(255,124,42,.07);}
+.phase-pill.f3{color:var(--red);border-color:rgba(255,61,61,.3);background:rgba(255,61,61,.07);}
+
+/* SECTIONS */
+.section{display:none;}.section.active{display:block;}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.card-title{font-family:var(--fd);font-weight:800;font-size:20px;letter-spacing:1.5px;margin-bottom:3px;}
+.card-sub{font-size:11px;color:var(--text3);font-family:var(--fm);margin-bottom:16px;}
+
+/* SESSION BUTTONS */
+.session-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+.session-grid.cols3{grid-template-columns:repeat(3,1fr);}
+.session-btn{padding:14px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;transition:all .2s;text-align:left;position:relative;overflow:hidden;}
+.session-btn::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.session-btn.ta::before{background:var(--red);}
+.session-btn.tb::before{background:var(--blue);}
+.session-btn.ulu::before{background:var(--orange);}
+.session-btn.ull::before{background:var(--green);}
+.session-btn.push::before{background:var(--red);}
+.session-btn.pull::before{background:var(--blue);}
+.session-btn.legs::before{background:var(--green);}
+.session-btn.active{color:var(--text);}
+.session-btn.active.ta{border-color:rgba(255,61,61,.4);background:rgba(255,61,61,.07);}
+.session-btn.active.tb{border-color:rgba(61,158,255,.4);background:rgba(61,158,255,.07);}
+.session-btn.active.ulu{border-color:rgba(255,124,42,.4);background:rgba(255,124,42,.07);}
+.session-btn.active.ull{border-color:rgba(46,204,113,.4);background:rgba(46,204,113,.07);}
+.session-btn.active.push{border-color:rgba(255,61,61,.4);background:rgba(255,61,61,.07);}
+.session-btn.active.pull{border-color:rgba(61,158,255,.4);background:rgba(61,158,255,.07);}
+.session-btn.active.legs{border-color:rgba(46,204,113,.4);background:rgba(46,204,113,.07);}
+.btn-day{font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--text3);margin-bottom:4px;}
+.btn-name{font-family:var(--fd);font-size:17px;font-weight:800;letter-spacing:1px;}
+.btn-focus{font-size:11px;color:var(--text3);margin-top:3px;}
+
+/* EXERCISE */
+.exercise-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.ex-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.ex-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ex-muscle{font-size:10px;color:var(--text3);font-family:var(--fm);background:var(--surface3);padding:2px 7px;border-radius:4px;}
+.ex-target{font-family:var(--fm);font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0;}
+.sets-header,.sets-row{display:grid;grid-template-columns:32px 1fr 1fr 1fr 34px;gap:5px;align-items:center;margin-bottom:5px;}
+.set-lbl{font-family:var(--fm);font-size:10px;color:var(--text3);text-align:center;}
+.set-hdr{font-size:9px;color:var(--text3);text-align:center;font-family:var(--fm);}
+.set-input{background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--fm);font-size:14px;padding:9px 4px;text-align:center;width:100%;transition:border-color .2s;-moz-appearance:textfield;}
+.set-input::-webkit-outer-spin-button,.set-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.set-input:focus{outline:none;border-color:var(--red);}
+.set-input.done{border-color:var(--green);background:rgba(46,204,113,.06);color:var(--green);}
+.rpe-sel{font-size:11px!important;padding:6px 2px!important;}
+.done-btn{width:34px;height:34px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);color:var(--text3);font-size:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.done-btn.on{border-color:var(--green);background:rgba(46,204,113,.1);color:var(--green);}
+.ex-footer{margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rest-quick{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-family:var(--fm);font-size:9px;padding:4px 10px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
+.rest-quick:hover{border-color:var(--red);color:var(--text2);}
+.po-badge{display:inline-flex;align-items:center;font-family:var(--fm);font-size:9px;padding:3px 8px;border-radius:4px;}
+.po-badge.ready{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.2);}
+.po-badge.nodata{background:rgba(90,106,122,.1);color:var(--text3);border:1px solid var(--border);}
+.po-badge.keep{background:rgba(255,194,51,.08);color:var(--yellow);border:1px solid rgba(255,194,51,.2);}
+
+/* TIMER */
+.timer-wrap{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.timer-lbl{font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:4px;}
+.timer-disp{font-family:var(--fm);font-size:32px;font-weight:700;letter-spacing:2px;min-width:86px;}
+.timer-disp.run{color:var(--red);}.timer-disp.done{color:var(--green);}
+.timer-prog{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden;width:120px;}
+.timer-bar{height:100%;background:var(--red);border-radius:2px;transition:width 1s linear;}
+.timer-right{display:flex;flex-direction:column;gap:6px;}
+.timer-presets{display:flex;gap:5px;}
+.t-pre{background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);font-family:var(--fm);font-size:10px;padding:5px 9px;cursor:pointer;}
+.t-pre:hover{color:var(--text2);}
+.t-start{padding:8px 20px;border-radius:6px;border:none;background:var(--red);color:white;font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:1px;cursor:pointer;}
+.t-start.stop{background:var(--text3);}
+
+/* RPE GUIDE */
+.rpe-guide{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+.rpe-guide-title{font-family:var(--fd);font-weight:700;font-size:14px;letter-spacing:1px;margin-bottom:10px;color:var(--yellow);}
+.rpe-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.rpe-num{font-family:var(--fm);font-size:10px;font-weight:700;min-width:30px;padding:3px 6px;border-radius:4px;text-align:center;}
+.r7{background:rgba(46,204,113,.15);color:var(--green);}
+.r8{background:rgba(255,194,51,.15);color:var(--yellow);}
+.r9{background:rgba(255,124,42,.15);color:var(--orange);}
+.r10{background:rgba(255,61,61,.15);color:var(--red);}
+.rpe-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+
+/* MOOD */
+.mood-row{display:flex;gap:6px;margin-bottom:14px;}
+.mood-btn{flex:1;padding:10px 4px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:19px;}
+.mood-btn .ml{font-size:8px;color:var(--text3);font-family:var(--fm);}
+.mood-btn.on{border-color:var(--yellow);background:rgba(255,194,51,.08);transform:scale(1.05);}
+.notes-inp{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--fb);font-size:13px;padding:12px;resize:none;height:70px;margin-bottom:14px;}
+.notes-inp:focus{outline:none;border-color:var(--blue);}
+.date-inp{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--fm);font-size:13px;padding:10px 12px;width:100%;margin-bottom:14px;}
+.date-inp:focus{outline:none;border-color:var(--blue);}
+.btn-save{width:100%;padding:16px;background:var(--red);border:none;border-radius:10px;color:white;font-family:var(--fd);font-weight:800;font-size:19px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
+.btn-save:hover{background:#ff5555;transform:translateY(-1px);}
+.label{display:block;font-family:var(--fm);font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:8px;}
+hr.div{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* HISTORY */
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden;}
+.history-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.history-item.ta::before{background:var(--red);}
+.history-item.tb::before{background:var(--blue);}
+.history-item.ulu::before{background:var(--orange);}
+.history-item.ull::before{background:var(--green);}
+.history-item.push::before{background:var(--red);}
+.history-item.pull::before{background:var(--blue);}
+.history-item.legs::before{background:var(--green);}
+.history-item:hover{border-color:var(--border2);}
+.h-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.h-session{font-family:var(--fd);font-weight:800;font-size:20px;letter-spacing:1px;}
+.h-date{font-family:var(--fm);font-size:10px;color:var(--text3);margin-top:2px;}
+.h-mood{font-size:20px;}
+.pills{display:flex;gap:7px;flex-wrap:wrap;}
+.pill{font-family:var(--fm);font-size:10px;color:var(--text3);background:var(--surface2);padding:3px 9px;border-radius:3px;}
+.pill.g{color:var(--green);background:rgba(46,204,113,.08);}
+.pill.b{color:var(--blue);background:rgba(61,158,255,.08);}
+.h-note{font-size:11px;color:var(--text3);margin-top:7px;font-style:italic;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;backdrop-filter:blur(6px);}
+.modal-overlay.open{display:flex;align-items:flex-end;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px 16px 0 0;padding:22px 20px 38px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.m-handle{width:36px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 18px;}
+.m-title{font-family:var(--fd);font-weight:900;font-size:26px;letter-spacing:2px;margin-bottom:3px;}
+.m-date{font-family:var(--fm);font-size:10px;color:var(--text3);margin-bottom:16px;}
+.m-ex-name{font-weight:700;font-size:13px;color:var(--red);margin-bottom:6px;}
+.m-sets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.m-chip{font-family:var(--fm);font-size:11px;background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:5px;color:var(--text2);}
+.m-chip.done{border-color:var(--green);color:var(--green);background:rgba(46,204,113,.06);}
+.m-close{width:100%;padding:13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:var(--fb);font-size:14px;cursor:pointer;margin-top:14px;}
+.btn-del{padding:8px 14px;background:transparent;border:1px solid rgba(255,61,61,.2);border-radius:6px;color:rgba(255,61,61,.6);font-family:var(--fb);font-size:12px;cursor:pointer;}
+.btn-del:hover{background:rgba(255,61,61,.08);color:var(--red);}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.s-lbl{font-family:var(--fm);font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:6px;}
+.s-val{font-family:var(--fd);font-size:36px;font-weight:900;letter-spacing:1px;line-height:1;}
+.s-unit{font-size:11px;color:var(--text3);margin-top:4px;}
+.stat-card.rc{border-color:rgba(255,61,61,.2);}.s-val.rc{color:var(--red);}
+.stat-card.gc{border-color:rgba(46,204,113,.2);}.s-val.gc{color:var(--green);}
+
+/* ROADMAP */
+.roadmap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+.roadmap-title{font-family:var(--fd);font-weight:800;font-size:16px;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.road-step{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.road-step:last-child{border-bottom:none;}
+.road-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;font-weight:700;flex-shrink:0;}
+.road-dot.cur{background:var(--red);color:white;}
+.road-dot.done{background:rgba(46,204,113,.15);color:var(--green);border:1px solid rgba(46,204,113,.3);}
+.road-dot.locked{background:var(--surface3);color:var(--text3);border:1px solid var(--border);}
+.road-info{flex:1;}
+.road-name{font-weight:600;font-size:13px;margin-bottom:3px;}
+.road-name.cur{color:var(--red);}.road-name.done{color:var(--green);}.road-name.locked{color:var(--text3);}
+.road-desc{font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:6px;}
+.road-prog{margin-bottom:8px;}
+.road-prog-txt{font-family:var(--fm);font-size:9px;color:var(--text3);margin-bottom:3px;}
+.road-prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.road-prog-fill{height:100%;border-radius:2px;transition:width .5s;}
+.road-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.road-btn{padding:5px 12px;border-radius:5px;font-family:var(--fm);font-size:10px;cursor:pointer;border:1px solid;transition:all .2s;letter-spacing:.5px;}
+.road-btn.go{background:rgba(255,61,61,.1);color:var(--red);border-color:rgba(255,61,61,.3);}
+.road-btn.go:hover{background:rgba(255,61,61,.2);}
+.road-btn.cur-btn{background:rgba(46,204,113,.1);color:var(--green);border-color:rgba(46,204,113,.3);cursor:default;}
+.road-btn.back{background:transparent;color:var(--text3);border-color:var(--border);}
+.road-btn.back:hover{border-color:var(--border2);color:var(--text2);}
+
+/* PO */
+.po-sect{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;}
+.po-title{font-family:var(--fd);font-weight:700;font-size:14px;letter-spacing:1px;margin-bottom:10px;color:var(--yellow);}
+.po-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+.po-row:last-child{border-bottom:none;}
+.po-en{font-size:12px;font-weight:600;}
+.po-st{font-family:var(--fm);font-size:10px;}
+.po-st.up{color:var(--green);}.po-st.keep{color:var(--yellow);}.po-st.new{color:var(--text3);}
+
+/* CHART */
+.chart-sel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--fm);font-size:11px;padding:8px 10px;width:100%;margin-bottom:12px;}
+canvas{border-radius:8px;}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--text3);}
+.empty-icon{font-size:42px;margin-bottom:12px;}
+.empty-title{font-family:var(--fd);font-weight:800;font-size:22px;letter-spacing:2px;margin-bottom:8px;color:var(--text2);}
+.empty-desc{font-size:12px;line-height:1.7;}
+
+/* NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(8,11,15,.97);border-top:1px solid var(--border);backdrop-filter:blur(20px);display:flex;z-index:50;}
+.nav-btn{flex:1;padding:11px 8px 14px;border:none;background:transparent;color:var(--text3);font-family:var(--fb);font-size:10px;font-weight:600;cursor:pointer;transition:color .2s;display:flex;flex-direction:column;align-items:center;gap:4px;letter-spacing:.5px;}
+.nav-btn .icon{font-size:19px;}
+.nav-btn.active{color:var(--red);}
+
+/* TOAST */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--green);color:#fff;font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:1px;padding:12px 28px;border-radius:8px;z-index:999;transition:transform .3s ease;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* PHASE MODAL CARDS */
+.pmodal-title{font-family:var(--fd);font-weight:900;font-size:22px;letter-spacing:2px;margin-bottom:4px;}
+.pmodal-sub{font-size:12px;color:var(--text3);margin-bottom:18px;}
+.pcard{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s;}
+.pcard:hover{border-color:var(--border2);}
+.pcard.cur{border-color:var(--red);background:rgba(255,61,61,.05);}
+.pcard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.pcard-name{font-family:var(--fd);font-weight:800;font-size:18px;letter-spacing:1px;}
+.pcard-badge{font-family:var(--fm);font-size:9px;padding:3px 8px;border-radius:3px;}
+.pcard-badge.on{background:rgba(255,61,61,.15);color:var(--red);}
+.pcard-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px;}
+.pcard-pills{display:flex;gap:5px;flex-wrap:wrap;}
+.pcard-pill{font-family:var(--fm);font-size:9px;padding:2px 8px;border-radius:3px;background:var(--surface3);color:var(--text3);}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.card,.exercise-item,.history-item,.stat-card{animation:fadeIn .25s ease;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <div class="logo"><span class="iron">IRON</span><span class="log">LOG</span></div>
+      <div class="header-sub" id="headerSub">REKOMPOSISI JOURNEY 🔥</div>
+    </div>
+    <div class="phase-pill f1" id="phasePill" onclick="openPhaseModal()">FASE 1 ▾</div>
+  </div>
+
+  <!-- LOG -->
+  <div class="section active" id="sec-log">
+    <div class="card">
+      <div class="card-title">SESI HARI INI</div>
+      <div class="card-sub" id="logCardSub">Pilih sesi → isi beban & rep → simpan</div>
+      <span class="label">TANGGAL</span>
+      <input type="date" class="date-inp" id="logDate">
+      <span class="label">PILIH SESI</span>
+      <div class="session-grid" id="sessionGrid"></div>
+    </div>
+
+    <div class="timer-wrap" id="timerWrap" style="display:none">
+      <div>
+        <div class="timer-lbl">⏱ REST TIMER</div>
+        <div class="timer-disp" id="timerDisp">02:30</div>
+        <div class="timer-prog"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+      </div>
+      <div class="timer-right">
+        <div class="timer-presets">
+          <button class="t-pre" onclick="setTimer(60)">1:00</button>
+          <button class="t-pre" onclick="setTimer(90)">1:30</button>
+          <button class="t-pre" onclick="setTimer(150)">2:30</button>
+          <button class="t-pre" onclick="setTimer(180)">3:00</button>
+        </div>
+        <button class="t-start" id="timerBtn" onclick="toggleTimer()">START</button>
+      </div>
+    </div>
+
+    <div id="exerciseLog" style="display:none">
+      <div class="card">
+        <div class="card-title" id="sessTitle">-</div>
+        <div class="card-sub" id="sessSub">-</div>
+        <div style="margin-bottom:12px">
+          <button onclick="toggleGuide()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--yellow);font-family:var(--fm);font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:1px">⚡ PANDUAN RPE & KAPAN BERHENTI</button>
+        </div>
+        <div class="rpe-guide" id="rpeGuide" style="display:none">
+          <div class="rpe-guide-title">⚡ KAPAN HARUS BERHENTI?</div>
+          <div class="rpe-item"><span class="rpe-num r7">RPE 7</span><div class="rpe-desc">Bisa 3 rep lagi. Terlalu ringan → naikkan beban.</div></div>
+          <div class="rpe-item"><span class="rpe-num r8">RPE 8</span><div class="rpe-desc">✅ TARGET — Bisa 2 rep lagi tapi sengaja berhenti. Sweet spot!</div></div>
+          <div class="rpe-item"><span class="rpe-num r9">RPE 9</span><div class="rpe-desc">Bisa 1 rep lagi. Boleh di set terakhir isolasi saja.</div></div>
+          <div class="rpe-item"><span class="rpe-num r10">RPE 10</span><div class="rpe-desc">❌ Failure total. HINDARI di squat/deadlift/bench!</div></div>
+          <hr class="div">
+          <div style="font-size:11px;color:var(--text3);line-height:1.6">Drop normal: 8→7→6 rep per set. Drop >30%? → rest terlalu pendek atau beban terlalu berat.<br><strong style="color:var(--yellow)">Compound: rest 2.5–3 menit. Isolasi: rest 60 detik.</strong></div>
+        </div>
+        <div id="exerciseItems"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">MOOD & CATATAN</div>
+        <div class="card-sub">Bagaimana sesi ini terasa?</div>
+        <span class="label">MOOD</span>
+        <div class="mood-row">
+          <button class="mood-btn" data-mood="💀">💀<span class="ml">MATI</span></button>
+          <button class="mood-btn" data-mood="😫">😫<span class="ml">BERAT</span></button>
+          <button class="mood-btn" data-mood="😐">😐<span class="ml">OKE</span></button>
+          <button class="mood-btn" data-mood="😤">😤<span class="ml">GAS</span></button>
+          <button class="mood-btn" data-mood="🔥">🔥<span class="ml">FIRE</span></button>
+        </div>
+        <span class="label">CATATAN</span>
+        <textarea class="notes-inp" id="notesInp" placeholder="Gerakan mana paling kerasa? Beban sudah tepat? Ada yang tidak nyaman?"></textarea>
+        <button class="btn-save" onclick="saveLog()">SIMPAN SESI 💾</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="section" id="sec-history">
+    <div class="card">
+      <div class="card-title">RIWAYAT LATIHAN</div>
+      <div class="card-sub">Semua sesi yang sudah kamu lakukan</div>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section" id="sec-stats">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="roadmap">
+      <div class="roadmap-title">
+        📍 ROADMAP FASE
+        <span style="font-family:var(--fm);font-size:10px;color:var(--text3);font-weight:400">tap fase untuk ganti program</span>
+      </div>
+      <div id="roadmapItems"></div>
+    </div>
+    <div class="po-sect" id="poSect" style="display:none">
+      <div class="po-title">⬆️ STATUS PROGRESSIVE OVERLOAD</div>
+      <div id="poList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">PROGRESS BEBAN</div>
+      <div class="card-sub">Grafik beban per gerakan</div>
+      <select class="chart-sel" id="exSel" onchange="renderChart()"></select>
+      <canvas id="progressChart"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">FREKUENSI SESI</div>
+      <div class="card-sub">Jumlah sesi per minggu</div>
+      <canvas id="freqChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('log',this)"><span class="icon">✏️</span>LOG</button>
+  <button class="nav-btn" onclick="switchTab('history',this)"><span class="icon">📋</span>RIWAYAT</button>
+  <button class="nav-btn" onclick="switchTab('stats',this)"><span class="icon">📈</span>STATISTIK</button>
+</div>
+
+<!-- LOG DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div id="modalBody"></div>
+    <button class="m-close" onclick="closeModal()">Tutup</button>
+  </div>
+</div>
+
+<!-- PHASE MODAL -->
+<div class="modal-overlay" id="phaseOverlay" onclick="closePModal(event)">
+  <div class="modal">
+    <div class="m-handle"></div>
+    <div class="pmodal-title">GANTI FASE LATIHAN</div>
+    <div class="pmodal-sub">Program latihan akan otomatis berubah sesuai fase yang dipilih.</div>
+    <div id="phaseCards"></div>
+    <button class="m-close" onclick="closePModal()">Batal</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓</div>
+
+<script>
+// ════════════════════════════════════════════
+// PROGRAM DATA
+// ════════════════════════════════════════════
+const PHASES = {
+  1:{
+    name:'FASE 1', label:'Full Body 3×/Minggu',
+    desc:'Bulan 1–3. Fokus form benar + progressive overload. Pemula.',
+    freq:'Senin / Rabu / Jumat',
+    color:'f1', sets:3,
+    sessions:{
+      ta:{name:'SESI A',type:'ta',day:'SENIN / JUMAT',sub:'Full Body — Squat & Press',exercises:[
+        {name:'Squat',muscle:'Quad+Glute',target:'3×6–8',rest:150,cp:true},
+        {name:'DB Incline Press',muscle:'Dada Atas',target:'3×8–10',rest:90,cp:true},
+        {name:'Lat Pulldown',muscle:'Punggung Lebar',target:'3×8–10',rest:90,cp:true},
+        {name:'DB Shoulder Press',muscle:'Bahu',target:'3×8–10',rest:90,cp:true},
+        {name:'Romanian Deadlift',muscle:'Hamstring+Glute',target:'3×8–10',rest:90,cp:true},
+        {name:'Lateral Raise',muscle:'Bahu Samping',target:'2×12–15',rest:60,cp:false},
+        {name:'Bicep Curl',muscle:'Bicep',target:'2×10–12',rest:60,cp:false},
+        {name:'Tricep Pushdown',muscle:'Tricep',target:'2×10–12',rest:60,cp:false},
+      ]},
+      tb:{name:'SESI B',type:'tb',day:'RABU',sub:'Full Body — Deadlift & Pull',exercises:[
+        {name:'Deadlift',muscle:'Full Posterior',target:'3×4–6',rest:180,cp:true},
+        {name:'Overhead Press',muscle:'Bahu+Upper',target:'3×8–10',rest:90,cp:true},
+        {name:'Seated Cable Row',muscle:'Punggung Tengah',target:'3×8–10',rest:90,cp:true},
+        {name:'Leg Press',muscle:'Quad+Glute',target:'3×10–12',rest:90,cp:true},
+        {name:'Leg Curl',muscle:'Hamstring',target:'3×10–12',rest:90,cp:false},
+        {name:'Face Pull',muscle:'Bahu Belakang',target:'3×15–20',rest:60,cp:false},
+        {name:'Hammer Curl',muscle:'Bicep',target:'2×10–12',rest:60,cp:false},
+        {name:'Overhead Tricep Ext',muscle:'Tricep',target:'2×10–12',rest:60,cp:false},
+      ]}
+    }
+  },
+  2:{
+    name:'FASE 2', label:'Upper/Lower Split 4×/Minggu',
+    desc:'Bulan 4–6. Volume naik, otot dilatih 2× seminggu dengan split lebih spesifik.',
+    freq:'Senin / Selasa / Kamis / Jumat',
+    color:'f2', sets:4,
+    sessions:{
+      ulu:{name:'UPPER',type:'ulu',day:'SENIN / KAMIS',sub:'Dada + Punggung + Bahu',exercises:[
+        {name:'Bench Press',muscle:'Dada',target:'4×6–8',rest:150,cp:true},
+        {name:'Barbell Row',muscle:'Punggung',target:'4×6–8',rest:150,cp:true},
+        {name:'Incline DB Press',muscle:'Dada Atas',target:'3×8–10',rest:90,cp:true},
+        {name:'Lat Pulldown',muscle:'Punggung Lebar',target:'3×8–10',rest:90,cp:true},
+        {name:'Overhead Press',muscle:'Bahu',target:'3×8–10',rest:90,cp:true},
+        {name:'Face Pull',muscle:'Bahu Belakang',target:'3×15–20',rest:60,cp:false},
+        {name:'Lateral Raise',muscle:'Bahu Samping',target:'3×12–15',rest:60,cp:false},
+        {name:'Bicep Curl',muscle:'Bicep',target:'3×10–12',rest:60,cp:false},
+        {name:'Tricep Pushdown',muscle:'Tricep',target:'3×10–12',rest:60,cp:false},
+      ]},
+      ull:{name:'LOWER',type:'ull',day:'SELASA / JUMAT',sub:'Quad + Hamstring + Glute',exercises:[
+        {name:'Squat',muscle:'Quad+Glute',target:'4×6–8',rest:150,cp:true},
+        {name:'Romanian Deadlift',muscle:'Hamstring+Glute',target:'3×8–10',rest:90,cp:true},
+        {name:'Leg Press',muscle:'Quad+Glute',target:'3×10–12',rest:90,cp:true},
+        {name:'Leg Curl',muscle:'Hamstring',target:'3×10–12',rest:90,cp:false},
+        {name:'Leg Extension',muscle:'Quad Isolasi',target:'3×12–15',rest:60,cp:false},
+        {name:'Hip Thrust',muscle:'Glute',target:'3×10–12',rest:90,cp:false},
+        {name:'Calf Raise',muscle:'Betis',target:'4×15–20',rest:60,cp:false},
+      ]}
+    }
+  },
+  3:{
+    name:'FASE 3', label:'Push/Pull/Legs 6×/Minggu',
+    desc:'Bulan 7+. Volume tinggi, tiap kelompok otot dilatih 2× seminggu dengan fokus penuh.',
+    freq:'Senin s/d Sabtu',
+    color:'f3', sets:4,
+    sessions:{
+      push:{name:'PUSH',type:'push',day:'SENIN / KAMIS',sub:'Dada + Bahu + Tricep',exercises:[
+        {name:'Bench Press',muscle:'Dada',target:'4×6–8',rest:150,cp:true},
+        {name:'Incline DB Press',muscle:'Dada Atas',target:'3×8–10',rest:90,cp:true},
+        {name:'Overhead Press',muscle:'Bahu',target:'3×8–10',rest:90,cp:true},
+        {name:'Cable Flye',muscle:'Dada Isolasi',target:'3×12–15',rest:60,cp:false},
+        {name:'Lateral Raise',muscle:'Bahu Samping',target:'4×12–15',rest:60,cp:false},
+        {name:'Tricep Pushdown',muscle:'Tricep',target:'3×10–12',rest:60,cp:false},
+        {name:'Overhead Tricep Ext',muscle:'Tricep Long Head',target:'3×10–12',rest:60,cp:false},
+      ]},
+      pull:{name:'PULL',type:'pull',day:'SELASA / JUMAT',sub:'Punggung + Bicep',exercises:[
+        {name:'Deadlift',muscle:'Full Posterior',target:'3×4–6',rest:180,cp:true},
+        {name:'Pull-up/Pulldown',muscle:'Punggung Lebar',target:'4×6–10',rest:90,cp:true},
+        {name:'Barbell Row',muscle:'Punggung',target:'4×6–8',rest:150,cp:true},
+        {name:'Seated Cable Row',muscle:'Punggung Tengah',target:'3×10–12',rest:90,cp:true},
+        {name:'Face Pull',muscle:'Bahu Belakang',target:'3×15–20',rest:60,cp:false},
+        {name:'Bicep Curl',muscle:'Bicep',target:'3×10–12',rest:60,cp:false},
+        {name:'Hammer Curl',muscle:'Bicep+Brachialis',target:'3×10–12',rest:60,cp:false},
+      ]},
+      legs:{name:'LEGS',type:'legs',day:'RABU / SABTU',sub:'Quad + Hamstring + Glute + Betis',exercises:[
+        {name:'Squat',muscle:'Quad+Glute',target:'4×6–8',rest:150,cp:true},
+        {name:'Romanian Deadlift',muscle:'Hamstring+Glute',target:'3×8–10',rest:90,cp:true},
+        {name:'Leg Press',muscle:'Quad+Glute',target:'3×10–12',rest:90,cp:true},
+        {name:'Leg Curl',muscle:'Hamstring',target:'3×10–12',rest:90,cp:false},
+        {name:'Leg Extension',muscle:'Quad Isolasi',target:'3×12–15',rest:60,cp:false},
+        {name:'Hip Thrust',muscle:'Glute',target:'3×10–12',rest:90,cp:false},
+        {name:'Calf Raise',muscle:'Betis',target:'5×15–20',rest:60,cp:false},
+      ]}
+    }
+  }
+};
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let logs = JSON.parse(localStorage.getItem('ironlogs_v3')||'[]');
+let phase= parseInt(localStorage.getItem('ironPhase')||'1');
+let curSess=null, selMood='';
+let tInt=null, tTotal=150, tLeft=150, tOn=false;
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function init(){
+  document.getElementById('logDate').value=new Date().toISOString().split('T')[0];
+  document.querySelectorAll('.mood-btn').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.mood-btn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); selMood=b.dataset.mood;
+  }));
+  applyPhase(); renderHistory(); renderStats();
+}
+
+function applyPhase(){
+  const p=PHASES[phase];
+  const pill=document.getElementById('phasePill');
+  pill.textContent=p.name+' ▾';
+  pill.className='phase-pill '+p.color;
+  document.getElementById('headerSub').textContent=p.label.toUpperCase()+' 🔥';
+  document.getElementById('logCardSub').textContent='Jadwal: '+p.freq;
+  renderSessBtns();
+}
+
+function renderSessBtns(){
+  const p=PHASES[phase];
+  const sess=p.sessions;
+  const n=Object.keys(sess).length;
+  const grid=document.getElementById('sessionGrid');
+  grid.className='session-grid'+(n===3?' cols3':'');
+  grid.innerHTML=Object.entries(sess).map(([k,s])=>`
+    <button class="session-btn ${s.type}" onclick="selectSess('${k}')">
+      <div class="btn-day">${s.day}</div>
+      <div class="btn-name">${s.name}</div>
+      <div class="btn-focus">${s.sub.split(' — ')[1]||s.sub}</div>
+    </button>`).join('');
+}
+
+// ════════════════════════════════════════════
+// PHASE MODAL
+// ════════════════════════════════════════════
+function openPhaseModal(){
+  document.getElementById('phaseCards').innerHTML=Object.entries(PHASES).map(([n,p])=>{
+    const isCur=parseInt(n)===phase;
+    const sNames=Object.values(p.sessions).map(s=>s.name);
+    return `<div class="pcard ${isCur?'cur':''}" onclick="setPhase(${n})">
+      <div class="pcard-head">
+        <div class="pcard-name">${p.name} — ${p.label}</div>
+        <div class="pcard-badge ${isCur?'on':''}">${isCur?'AKTIF':''}</div>
+      </div>
+      <div class="pcard-desc">${p.desc}<br><strong style="color:var(--text2)">Jadwal: ${p.freq}</strong></div>
+      <div class="pcard-pills">${sNames.map(x=>`<span class="pcard-pill">${x}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('phaseOverlay').classList.add('open');
+}
+
+function setPhase(n){
+  phase=parseInt(n);
+  localStorage.setItem('ironPhase',n);
+  closePModal();
+  curSess=null;
+  document.getElementById('exerciseLog').style.display='none';
+  document.getElementById('timerWrap').style.display='none';
+  document.querySelectorAll('.session-btn').forEach(b=>b.classList.remove('active'));
+  applyPhase(); renderStats();
+  showToast('✓ '+PHASES[n].name+' AKTIF!',true);
+}
+
+function closePModal(e){
+  if(e&&e.target!==document.getElementById('phaseOverlay'))return;
+  document.getElementById('phaseOverlay').classList.remove('open');
+}
+
+// ════════════════════════════════════════════
+// SESSION
+// ════════════════════════════════════════════
+function selectSess(key){
+  const p=PHASES[phase]; const s=p.sessions[key]; if(!s)return;
+  curSess=key;
+  document.querySelectorAll('.session-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.session-btn[onclick="selectSess('${key}')"]`).classList.add('active');
+  document.getElementById('sessTitle').textContent=s.name;
+  document.getElementById('sessSub').textContent=s.day+' — '+s.sub;
+  const SETS=p.sets;
+  document.getElementById('exerciseItems').innerHTML=s.exercises.map((ex,ei)=>`
+    <div class="exercise-item">
+      <div class="ex-header">
+        <div class="ex-name">${ex.name}<span class="ex-muscle">${ex.muscle}</span></div>
+        <div class="ex-target">${ex.target}</div>
+      </div>
+      <div class="sets-header">
+        <div class="set-hdr"></div><div class="set-hdr">BEBAN kg</div>
+        <div class="set-hdr">REP</div><div class="set-hdr">RPE</div><div class="set-hdr">✓</div>
+      </div>
+      ${Array.from({length:SETS},(_,si)=>`
+        <div class="sets-row">
+          <div class="set-lbl">S${si+1}</div>
+          <input type="number" class="set-input" id="w_${ei}_${si}" placeholder="kg" min="0" step="0.5" oninput="chk(${ei},${si})" inputmode="decimal">
+          <input type="number" class="set-input" id="r_${ei}_${si}" placeholder="rep" min="0" oninput="chk(${ei},${si})" inputmode="numeric">
+          <select class="set-input rpe-sel" id="rpe_${ei}_${si}">
+            <option value="">-</option><option value="7">7</option>
+            <option value="8" selected>8</option><option value="9">9</option><option value="10">10</option>
+          </select>
+          <button class="done-btn" id="db_${ei}_${si}" onclick="tgl(${ei},${si})">○</button>
+        </div>`).join('')}
+      <div class="ex-footer">
+        <button class="rest-quick" onclick="startRest(${ex.rest})">⏱ REST ${fmtR(ex.rest)}</button>
+        <div class="po-badge nodata" id="po_${ei}">— BELUM ADA DATA</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('exerciseLog').style.display='block';
+  document.getElementById('timerWrap').style.display='flex';
+  document.getElementById('exerciseLog').scrollIntoView({behavior:'smooth',block:'start'});
+  checkPO(key);
+}
+
+function fmtR(s){return s>=60?Math.floor(s/60)+'m'+(s%60?s%60+'s':''):s+'s';}
+function chk(ei,si){const w=document.getElementById(`w_${ei}_${si}`).value,r=document.getElementById(`r_${ei}_${si}`).value;if(w&&r){document.getElementById(`w_${ei}_${si}`).classList.add('done');document.getElementById(`r_${ei}_${si}`).classList.add('done');}}
+function tgl(ei,si){const b=document.getElementById(`db_${ei}_${si}`),on=b.textContent==='✓';b.textContent=on?'○':'✓';b.classList.toggle('on',!on);document.getElementById(`w_${ei}_${si}`).classList.toggle('done',!on);document.getElementById(`r_${ei}_${si}`).classList.toggle('done',!on);}
+function toggleGuide(){const g=document.getElementById('rpeGuide');g.style.display=g.style.display==='none'?'block':'none';}
+
+// ════════════════════════════════════════════
+// PO CHECK
+// ════════════════════════════════════════════
+function checkPO(key){
+  const p=PHASES[phase]; const s=p.sessions[key]; if(!s)return;
+  const prev=logs.filter(l=>(l.phase||1)===phase&&l.session===key);
+  s.exercises.forEach((ex,ei)=>{
+    const badge=document.getElementById(`po_${ei}`); if(!badge)return;
+    if(!prev.length){badge.textContent='— BELUM ADA DATA';badge.className='po-badge nodata';return;}
+    const lx=prev[0].exercises.find(e=>e.name===ex.name); if(!lx)return;
+    const maxR=getMaxR(ex.target);
+    const done=lx.sets.filter(s=>s.reps>0);
+    const allMax=done.length>0&&done.every(s=>s.reps>=maxR);
+    const mw=Math.max(...lx.sets.map(s=>s.weight||0));
+    const rs=done.map(s=>s.reps).join('/');
+    if(allMax&&mw>0){badge.textContent='✅ NAIK → '+(mw+(ex.cp?2.5:1.25))+'kg';badge.className='po-badge ready';}
+    else if(mw>0){badge.textContent='TERAKHIR: '+mw+'kg | '+rs;badge.className='po-badge keep';}
+  });
+}
+
+function getMaxR(t){const m=t.match(/(\d+)[–-](\d+)/);return m?parseInt(m[2]):10;}
+
+// ════════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════════
+function setTimer(s){clearInterval(tInt);tOn=false;tTotal=s;tLeft=s;document.getElementById('timerBtn').textContent='START';document.getElementById('timerBtn').classList.remove('stop');document.getElementById('timerDisp').className='timer-disp';document.getElementById('timerBar').style.width='100%';updDisp();}
+function startRest(s){setTimer(s);document.getElementById('timerWrap').scrollIntoView({behavior:'smooth',block:'nearest'});setTimeout(toggleTimer,300);}
+function toggleTimer(){
+  if(tOn){clearInterval(tInt);tOn=false;document.getElementById('timerBtn').textContent='LANJUT';document.getElementById('timerBtn').classList.remove('stop');}
+  else{
+    if(tLeft<=0){tLeft=tTotal;document.getElementById('timerDisp').className='timer-disp';}
+    tOn=true;document.getElementById('timerBtn').textContent='STOP';document.getElementById('timerBtn').classList.add('stop');document.getElementById('timerDisp').className='timer-disp run';
+    tInt=setInterval(()=>{tLeft--;updDisp();document.getElementById('timerBar').style.width=(tLeft/tTotal*100)+'%';
+      if(tLeft<=0){clearInterval(tInt);tOn=false;document.getElementById('timerDisp').className='timer-disp done';document.getElementById('timerBtn').textContent='ULANG';document.getElementById('timerBtn').classList.remove('stop');if(navigator.vibrate)navigator.vibrate([200,100,200]);}
+    },1000);
+  }
+}
+function updDisp(){const m=Math.floor(tLeft/60),s=tLeft%60;document.getElementById('timerDisp').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+
+// ════════════════════════════════════════════
+// SAVE
+// ════════════════════════════════════════════
+function saveLog(){
+  if(!curSess){showToast('Pilih sesi dulu!',false);return;}
+  const p=PHASES[phase]; const s=p.sessions[curSess];
+  const date=document.getElementById('logDate').value;
+  if(!date){showToast('Isi tanggal!',false);return;}
+  const SETS=p.sets;
+  const exercises=s.exercises.map((ex,ei)=>({name:ex.name,muscle:ex.muscle,
+    sets:Array.from({length:SETS},(_,si)=>({
+      weight:parseFloat(document.getElementById(`w_${ei}_${si}`).value)||0,
+      reps:parseInt(document.getElementById(`r_${ei}_${si}`).value)||0,
+      rpe:document.getElementById(`rpe_${ei}_${si}`).value||'8',
+      done:document.getElementById(`db_${ei}_${si}`).textContent==='✓'
+    }))
+  }));
+  logs.unshift({id:Date.now(),date,phase,session:curSess,sessionName:s.name,sessionSub:s.sub,mood:selMood||'😐',notes:document.getElementById('notesInp').value,exercises});
+  localStorage.setItem('ironlogs_v3',JSON.stringify(logs));
+  document.getElementById('exerciseLog').style.display='none';
+  document.getElementById('timerWrap').style.display='none';
+  document.getElementById('notesInp').value='';selMood='';
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.session-btn').forEach(b=>b.classList.remove('active'));
+  curSess=null;clearInterval(tInt);tOn=false;
+  renderHistory();renderStats();showToast('✓ TERSIMPAN!',true);
+  setTimeout(()=>switchTab('history',document.querySelectorAll('.nav-btn')[1]),1400);
+}
+
+// ════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════
+function renderHistory(){
+  const c=document.getElementById('historyList');
+  if(!logs.length){c.innerHTML=`<div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">BELUM ADA SESI</div><div class="empty-desc">Log sesi pertama kamu.<br>Setiap rep tercatat, setiap progres terlihat.</div></div>`;return;}
+  c.innerHTML=logs.map(log=>{
+    const sets=log.exercises.reduce((a,ex)=>a+ex.sets.filter(s=>s.done||s.weight>0).length,0);
+    const mw=Math.max(...log.exercises.flatMap(ex=>ex.sets.map(s=>s.weight||0)));
+    const ds=new Date(log.date).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'short'});
+    return `<div class="history-item ${log.session}" onclick="showDetail(${log.id})">
+      <div class="h-header"><div><div class="h-session">${log.sessionName}</div><div class="h-date">${ds}</div></div><div class="h-mood">${log.mood}</div></div>
+      <div class="pills"><span class="pill">Fase ${log.phase||1}</span><span class="pill">${log.exercises.length} gerakan</span><span class="pill g">${sets} set</span>${mw>0?`<span class="pill b">Max ${mw}kg</span>`:''}</div>
+      ${log.notes?`<div class="h-note">"${log.notes.substring(0,80)}${log.notes.length>80?'...':''}"</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function showDetail(id){
+  const log=logs.find(l=>l.id===id); if(!log)return;
+  const ds=new Date(log.date).toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('modalBody').innerHTML=`
+    <div class="m-title">${log.sessionName} ${log.mood}</div>
+    <div class="m-date">${ds} — Fase ${log.phase||1}</div>
+    ${log.notes?`<div style="font-size:12px;color:var(--text3);margin-bottom:14px;padding:10px;background:var(--surface2);border-radius:8px;font-style:italic">"${log.notes}"</div>`:''}
+    ${log.exercises.map(ex=>`<div><div class="m-ex-name">${ex.name} <span style="color:var(--text3);font-weight:400;font-size:10px">${ex.muscle}</span></div>
+    <div class="m-sets">${ex.sets.filter(s=>s.weight>0||s.reps>0).map((s,i)=>`<span class="m-chip ${s.done?'done':''}">S${i+1}: ${s.weight}kg×${s.reps}${s.rpe?' RPE'+s.rpe:''}</span>`).join('')}</div></div>`).join('')}
+    <hr class="div"><button class="btn-del" onclick="deleteLog(${id})">🗑 Hapus Sesi</button>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function deleteLog(id){if(!confirm('Hapus sesi ini?'))return;logs=logs.filter(l=>l.id!==id);localStorage.setItem('ironlogs_v3',JSON.stringify(logs));closeModal();renderHistory();renderStats();}
+function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.remove('open');}
+
+// ════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════
+function renderStats(){
+  const total=logs.length;
+  const now=new Date(); const sow=new Date(now); sow.setDate(now.getDate()-now.getDay()+1);
+  const tw=logs.filter(l=>new Date(l.date)>=sow).length;
+  const streak=calcStreak();
+  const wks=total>0?Math.ceil(total/PHASES[phase].sets):0;
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat-card rc"><div class="s-lbl">TOTAL SESI</div><div class="s-val rc">${total}</div><div class="s-unit">sesi selesai</div></div>
+    <div class="stat-card gc"><div class="s-lbl">MINGGU INI</div><div class="s-val gc">${tw}</div><div class="s-unit">sesi minggu ini</div></div>
+    <div class="stat-card"><div class="s-lbl">STREAK</div><div class="s-val">${streak}</div><div class="s-unit">minggu konsisten</div></div>
+    <div class="stat-card"><div class="s-lbl">EST. MINGGU KE</div><div class="s-val">${wks}</div><div class="s-unit">sejak mulai</div></div>`;
+  renderRoadmap(); renderPO(); renderChartSels(); renderChart(); renderFreqChart();
+}
+
+function renderRoadmap(){
+  const targets=[24,24,null];
+  document.getElementById('roadmapItems').innerHTML=Object.entries(PHASES).map(([n,p])=>{
+    const num=parseInt(n); const isCur=num===phase; const isDone=num<phase; const isLock=num>phase;
+    const pLogs=logs.filter(l=>(l.phase||1)===num).length;
+    const t=targets[num-1];
+    const pct=t?Math.min(100,Math.round(pLogs/t*100)):100;
+    const dotC=isCur?'cur':isDone?'done':'locked';
+    const nameC=isCur?'cur':isDone?'done':'locked';
+    const dotTxt=isDone?'✓':n;
+    let acts='';
+    if(isCur) acts+=`<span class="road-btn cur-btn">✓ FASE AKTIF SEKARANG</span>`;
+    else acts+=`<button class="road-btn go" onclick="setPhase(${n})">▶ AKTIFKAN FASE ${n}</button>`;
+    if(isDone) acts+=` <button class="road-btn back" onclick="setPhase(${n})">↩ Kembali</button>`;
+    return `<div class="road-step">
+      <div class="road-dot ${dotC}">${dotTxt}</div>
+      <div class="road-info">
+        <div class="road-name ${nameC}">${p.name} — ${p.label}</div>
+        <div class="road-desc">${p.desc}<br><strong style="color:var(--text2)">Jadwal: ${p.freq}</strong></div>
+        ${t?`<div class="road-prog"><div class="road-prog-txt">${pLogs}/${t} sesi (${pct}%)</div><div class="road-prog-bar"><div class="road-prog-fill" style="width:${pct}%;background:${isCur?'var(--red)':isDone?'var(--green)':'var(--border2)'}"></div></div></div>`:`<div style="font-family:var(--fm);font-size:9px;color:var(--text3);margin-bottom:6px">${pLogs} sesi tercatat</div>`}
+        <div class="road-actions">${acts}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPO(){
+  const p=PHASES[phase];
+  const allEx=[...new Set(logs.filter(l=>(l.phase||1)===phase).flatMap(l=>l.exercises.map(e=>e.name)))];
+  if(!allEx.length){document.getElementById('poSect').style.display='none';return;}
+  document.getElementById('poSect').style.display='block';
+  document.getElementById('poList').innerHTML=allEx.map(en=>{
+    const el=logs.filter(l=>(l.phase||1)===phase&&l.exercises.find(e=>e.name===en));
+    if(!el.length)return'';
+    const lx=el[0].exercises.find(e=>e.name===en); if(!lx)return'';
+    const mw=Math.max(...lx.sets.map(s=>s.weight||0));
+    const reps=lx.sets.filter(s=>s.reps>0).map(s=>s.reps);
+    let exDef=null;Object.values(p.sessions).forEach(s=>{const f=s.exercises.find(e=>e.name===en);if(f)exDef=f;});
+    const maxR=exDef?getMaxR(exDef.target):10;
+    const allMax=reps.length>0&&reps.every(r=>r>=maxR);
+    const inc=exDef&&exDef.cp?2.5:1.25;
+    return `<div class="po-row"><div class="po-en">${en}</div><div class="po-st ${allMax?'up':'keep'}">${allMax?'✅ NAIK → '+(mw+inc)+'kg':mw+'kg | '+reps.join('/')}</div></div>`;
+  }).join('');
+}
+
+function calcStreak(){
+  if(!logs.length)return 0;
+  const weeks={};logs.forEach(l=>{const k=`${new Date(l.date).getFullYear()}-${getWk(new Date(l.date))}`;weeks[k]=(weeks[k]||0)+1;});
+  let s=0;const now=new Date();
+  for(let i=0;i<52;i++){const d=new Date(now);d.setDate(d.getDate()-i*7);const k=`${d.getFullYear()}-${getWk(d)}`;if(weeks[k]&&weeks[k]>=2)s++;else if(i>0)break;}
+  return s;
+}
+function getWk(d){const j=new Date(d.getFullYear(),0,1);return Math.ceil((((d-j)/86400000)+j.getDay()+1)/7);}
+
+// ════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════
+function renderChartSels(){const all=[...new Set(logs.flatMap(l=>l.exercises.map(e=>e.name)))];const sel=document.getElementById('exSel');const cur=sel.value;sel.innerHTML=all.length===0?'<option>Belum ada data</option>':all.map(e=>`<option value="${e}" ${e===cur?'selected':''}>${e}</option>`).join('');}
+function renderChart(){
+  const ex=document.getElementById('exSel').value;const canvas=document.getElementById('progressChart');const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  const data=logs.filter(l=>l.exercises.some(e=>e.name===ex)).reverse().map(l=>({date:l.date,w:Math.max(...l.exercises.find(e=>e.name===ex).sets.map(s=>s.weight||0))}));
+  if(!data.length){canvas.height=80;ctx.fillStyle='#5a6a7a';ctx.font='13px Barlow';ctx.textAlign='center';ctx.fillText('Belum ada data',canvas.width/2,40);return;}
+  drawLine(ctx,canvas,data.map(d=>d.w),data.map(d=>d.date.slice(5)),'#ff3d3d');
+}
+function renderFreqChart(){
+  const canvas=document.getElementById('freqChart');const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  const weeks={};logs.forEach(l=>{const k='W'+getWk(new Date(l.date));weeks[k]=(weeks[k]||0)+1;});
+  const lbs=Object.keys(weeks).slice(-8);const vals=lbs.map(k=>weeks[k]);
+  if(!lbs.length){canvas.height=60;ctx.fillStyle='#5a6a7a';ctx.font='13px Barlow';ctx.textAlign='center';ctx.fillText('Belum ada data',canvas.width/2,30);return;}
+  drawBar(ctx,canvas,vals,lbs,'#3d9eff');
+}
+function drawLine(ctx,canvas,values,labels,color){
+  const W=canvas.offsetWidth||400,H=200;canvas.width=W;canvas.height=H;
+  const p={t:20,r:16,b:36,l:44};const cW=W-p.l-p.r,cH=H-p.t-p.b;const max=Math.max(...values)*1.2||10;
+  ctx.strokeStyle='#252e3a';ctx.lineWidth=1;for(let i=0;i<=4;i++){const y=p.t+(cH/4)*i;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+cW,y);ctx.stroke();ctx.fillStyle='#5a6a7a';ctx.font='10px Space Mono';ctx.textAlign='right';ctx.fillText(Math.round(max-(max/4)*i),p.l-6,y+4);}
+  const xS=cW/Math.max(values.length-1,1);
+  ctx.beginPath();values.forEach((v,i)=>{const x=p.l+i*xS,y=p.t+cH-(v/max)*cH;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.lineTo(p.l+(values.length-1)*xS,p.t+cH);ctx.lineTo(p.l,p.t+cH);ctx.closePath();const g=ctx.createLinearGradient(0,p.t,0,p.t+cH);g.addColorStop(0,color+'33');g.addColorStop(1,color+'00');ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';values.forEach((v,i)=>{const x=p.l+i*xS,y=p.t+cH-(v/max)*cH;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
+  values.forEach((v,i)=>{const x=p.l+i*xS,y=p.t+cH-(v/max)*cH;ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(i%Math.ceil(values.length/6)===0||i===values.length-1){ctx.fillStyle='#5a6a7a';ctx.font='9px Space Mono';ctx.textAlign='center';ctx.fillText(labels[i],x,H-8);}});
+}
+function drawBar(ctx,canvas,values,labels,color){
+  const W=canvas.offsetWidth||400,H=160;canvas.width=W;canvas.height=H;
+  const p={t:14,r:12,b:32,l:32};const cW=W-p.l-p.r,cH=H-p.t-p.b;const max=Math.max(...values,3);
+  ctx.strokeStyle='#252e3a';ctx.lineWidth=1;for(let i=0;i<=3;i++){const y=p.t+(cH/3)*i;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+cW,y);ctx.stroke();ctx.fillStyle='#5a6a7a';ctx.font='9px Space Mono';ctx.textAlign='right';ctx.fillText(Math.round(max-(max/3)*i),p.l-4,y+3);}
+  const bW=(cW/values.length)*.55,gap=cW/values.length;
+  values.forEach((v,i)=>{const x=p.l+i*gap+(gap-bW)/2,bH=(v/max)*cH,y=p.t+cH-bH;const g=ctx.createLinearGradient(0,y,0,y+bH);g.addColorStop(0,color);g.addColorStop(1,color+'44');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(x,y,bW,bH,4);ctx.fill();ctx.fillStyle='#5a6a7a';ctx.font='9px Space Mono';ctx.textAlign='center';ctx.fillText(labels[i],x+bW/2,H-8);if(v>0){ctx.fillStyle='#e8edf2';ctx.font='bold 10px Space Mono';ctx.fillText(v,x+bW/2,y-4);}});
+}
+
+// ════════════════════════════════════════════
+// NAV & UTILS
+// ════════════════════════════════════════════
+function switchTab(tab,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('sec-'+tab).classList.add('active');btn.classList.add('active');if(tab==='stats')renderStats();if(tab==='history')renderHistory();}
+function showToast(msg,ok){const t=document.getElementById('toast');t.textContent=msg;t.style.background=ok?'var(--green)':'var(--red)';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+init();
+</script>
+</body>
+</html>
